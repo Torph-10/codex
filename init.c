@@ -6,26 +6,37 @@
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 12:57:38 by ase               #+#    #+#             */
-/*   Updated: 2026/08/31 00:01:29 by ase              ###   ########.fr       */
+/*   Updated: 2026/09/10 15:22:11 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-static void	cleanup_dongles(t_simulation *sim, int count)
+static int	init_one_dongle(t_simulation *sim, int i)
 {
-	int	i;
-
-	i = 0;
-	while (i < count)
+	if (pthread_mutex_init(&sim->dongles[i].mutex, NULL) != 0)
+		return (0);
+	if (pthread_cond_init(&sim->dongles[i].cond, NULL) != 0)
+	{
+		pthread_mutex_destroy(&sim->dongles[i].mutex);
+		return (0);
+	}
+	sim->dongles[i].available_at = 0;
+	sim->dongles[i].id = i;
+	sim->dongles[i].held_by = -1;
+	sim->dongles[i].fifo_ticket = 0;
+	sim->dongles[i].waiters.size = 0;
+	sim->dongles[i].waiters.capacity = sim->config.number_of_coders;
+	sim->dongles[i].waiters.scheduler = sim->config.scheduler;
+	sim->dongles[i].waiters.requests = malloc(sizeof(t_request)
+			* sim->dongles[i].waiters.capacity);
+	if (!sim->dongles[i].waiters.requests)
 	{
 		pthread_mutex_destroy(&sim->dongles[i].mutex);
 		pthread_cond_destroy(&sim->dongles[i].cond);
-		free(sim->dongles[i].waiters.requests);
-		i++;
+		return (0);
 	}
-	free(sim->dongles);
-	free(sim->coders);
+	return (1);
 }
 
 static int	init_dongles(t_simulation *sim)
@@ -35,27 +46,8 @@ static int	init_dongles(t_simulation *sim)
 	i = 0;
 	while (i < sim->config.number_of_coders)
 	{
-		if (pthread_mutex_init(&sim->dongles[i].mutex, NULL) != 0)
+		if (!init_one_dongle(sim, i))
 			return (cleanup_dongles(sim, i), 0);
-		if (pthread_cond_init(&sim->dongles[i].cond, NULL) != 0)
-		{
-			pthread_mutex_destroy(&sim->dongles[i].mutex);
-			return (cleanup_dongles(sim, i), 0);
-		}
-		sim->dongles[i].available_at = 0;
-		sim->dongles[i].id = i;
-		sim->dongles[i].held_by = -1;
-		sim->dongles[i].fifo_ticket = 0;
-		sim->dongles[i].waiters.size = 0;
-		sim->dongles[i].waiters.capacity = sim->config.number_of_coders + 1;
-		sim->dongles[i].waiters.scheduler = sim->config.scheduler;
-		sim->dongles[i].waiters.requests = malloc(sizeof(t_request) * sim->dongles[i].waiters.capacity);
-		if (!sim->dongles[i].waiters.requests)
-		{
-			pthread_mutex_destroy(&sim->dongles[i].mutex);
-			pthread_cond_destroy(&sim->dongles[i].cond);
-			return (cleanup_dongles(sim, i), 0);
-		}
 		i++;
 	}
 	return (1);

@@ -1,34 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   main.c                                             :+:      :+:    :+:   */
+/*   monitor_utils.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/28 12:38:44 by ase               #+#    #+#             */
-/*   Updated: 2026/09/08 15:24:12 by ase              ###   ########.fr       */
+/*   Created: 2026/09/08 15:53:02 by ase               #+#    #+#             */
+/*   Updated: 2026/09/08 15:54:44 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
 
-int	main(int ac, char **av)
+int	simulation_stopped(t_simulation *sim)
 {
-	t_config		config;
-	t_simulation	sim;
+	int	stopped;
 
-	if (!parse(ac, av, &config))
-		return (1);
-	if (!init_simulation(&sim, &config))
-		return (1);
-	if (!create_monitor(&sim))
-		return (1);
-	if (!create_coders(&sim))
-		return (1);
-	if (!join_coders(&sim))
-		return (1);
-	if (!join_monitor(&sim))
-		return (1);
-	cleanup_simulation(&sim);
-	return (0);
+	pthread_mutex_lock(&sim->state_mutex);
+	stopped = sim->stopped;
+	pthread_mutex_unlock(&sim->state_mutex);
+	return (stopped);
+}
+
+int	join_monitor(t_simulation *sim)
+{
+	if (pthread_join(sim->monitor, NULL) != 0)
+		return (0);
+	return (1);
 }

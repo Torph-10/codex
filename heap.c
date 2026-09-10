@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/08/29 10:41:54 by ase               #+#    #+#             */
-/*   Updated: 2026/08/29 10:43:20 by ase              ###   ########.fr       */
+/*   Created: 2026/09/07 12:16:09 by ase               #+#    #+#             */
+/*   Updated: 2026/09/10 00:55:11 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,15 +19,12 @@ int	heap_priority(t_heap *heap, t_request *a, t_request *b)
 		if (a->deadline != b->deadline)
 			return (a->deadline < b->deadline);
 	}
-	else
-	{
-		if (a->arrival_order != b->arrival_order)
-			return (a->arrival_order < b->arrival_order);
-	}
+	if (a->arrival_order != b->arrival_order)
+		return (a->arrival_order < b->arrival_order);
 	return (a->coder_id < b->coder_id);
 }
 
-static void	heap_swap(t_request *a, t_request *b)
+void	heap_swap(t_request *a, t_request *b)
 {
 	t_request	tmp;
 
@@ -46,15 +43,15 @@ int	heap_top(t_heap *heap)
 void	heap_push(t_heap *heap, t_coder *coder, t_dongle *dongle)
 {
 	int		i;
-	long	parent;
+	int		parent;
 
 	if (heap->size >= heap->capacity)
 		return ;
 	dongle->fifo_ticket++;
 	heap->requests[heap->size].coder_id = coder->id;
 	heap->requests[heap->size].arrival_order = dongle->fifo_ticket;
-	heap->requests[heap->size].deadline = coder->last_compile_start + coder->simulation->config.time_to_burnout;
-	
+	heap->requests[heap->size].deadline = coder->last_compile_start
+		+ coder->simulation->config.time_to_burnout;
 	i = heap->size;
 	heap->size++;
 	while (i > 0)
@@ -70,8 +67,6 @@ void	heap_push(t_heap *heap, t_coder *coder, t_dongle *dongle)
 void	heap_remove(t_heap *heap, int coder_id)
 {
 	int	i;
-	int small;
-	int child;
 
 	i = 0;
 	while (i < heap->size && heap->requests[i].coder_id != coder_id)
@@ -80,23 +75,11 @@ void	heap_remove(t_heap *heap, int coder_id)
 		return ;
 	heap->size--;
 	heap->requests[i] = heap->requests[heap->size];
-	
-	while (i > 0 && heap_priority(heap, &heap->requests[i], &heap->requests[(i - 1) / 2]))
+	while (i > 0 && heap_priority(heap, &heap->requests[i],
+			&heap->requests[(i - 1) / 2]))
 	{
 		heap_swap(&heap->requests[i], &heap->requests[(i - 1) / 2]);
 		i = (i - 1) / 2;
 	}
-	while (i < heap->size)
-	{
-		small = i;
-		child = 2 * i + 1;
-		if (child < heap->size && heap_priority(heap, &heap->requests[child], &heap->requests[small]))
-			small = child;
-		if (child + 1 < heap->size && heap_priority(heap, &heap->requests[child + 1], &heap->requests[small]))
-			small = child + 1;
-		if (small == i)
-			break ;
-		heap_swap(&heap->requests[i], &heap->requests[small]);
-		i = small;
-	}
+	sift_down(heap, i);
 }

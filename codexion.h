@@ -6,7 +6,7 @@
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 12:36:40 by ase               #+#    #+#             */
-/*   Updated: 2026/08/29 10:54:00 by ase              ###   ########.fr       */
+/*   Updated: 2026/09/08 16:08:19 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,12 +23,12 @@
 # include <unistd.h>
 # include <sys/time.h>
 
-typedef struct s_simulation t_simulation;
-typedef struct s_coder      t_coder;
-typedef struct s_dongle     t_dongle;
-typedef struct s_config     t_config;
-typedef struct s_request    t_request;
-typedef struct s_heap       t_heap;
+typedef struct s_simulation	t_simulation;
+typedef struct s_coder		t_coder;
+typedef struct s_dongle		t_dongle;
+typedef struct s_config		t_config;
+typedef struct s_request	t_request;
+typedef struct s_heap		t_heap;
 
 typedef struct s_config
 {
@@ -99,7 +99,7 @@ int		create_coders(t_simulation *sim);
 int		join_coders(t_simulation *sim);
 void	*monitor_routine(void *arg);
 int		create_monitor(t_simulation *sim);
-void	take_dongles(t_coder *coder);
+int		take_dongles(t_coder *coder);
 void	release_dongles(t_coder *coder);
 int		join_monitor(t_simulation *sim);
 long	get_current_time(t_simulation *sim);
@@ -109,5 +109,13 @@ int		simulation_stopped(t_simulation *sim);
 void	heap_push(t_heap *heap, t_coder *coder, t_dongle *dongle);
 void	heap_remove(t_heap *heap, int coder_id);
 int		heap_top(t_heap *heap);
+void	queue_request(t_coder *coder, t_dongle *dongle);
+void	cancel_request(t_coder *coder, t_dongle *dongle);
+int		try_acquire(t_coder *coder, t_dongle *dongle);
+void	sift_down(t_heap *heap, int i);
+void	cleanup_dongles(t_simulation *sim, int count);
+void	cleanup_simulation(t_simulation *sim);
+void	heap_swap(t_request *a, t_request *b);
+int		heap_priority(t_heap *heap, t_request *a, t_request *b);
 
 #endif

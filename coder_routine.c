@@ -6,7 +6,7 @@
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 13:02:31 by ase               #+#    #+#             */
-/*   Updated: 2026/08/29 10:59:03 by ase              ###   ########.fr       */
+/*   Updated: 2026/09/08 13:00:36 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,15 +26,17 @@ int	join_coders(t_simulation *sim)
 	return (1);
 }
 
-static void	perform_compile(t_coder *coder)
+static int	perform_compile(t_coder *coder)
 {
-	take_dongles(coder);
+	if (!take_dongles(coder))
+		return (0);
 	pthread_mutex_lock(&coder->simulation->state_mutex);
 	coder->last_compile_start = get_current_time(coder->simulation);
 	pthread_mutex_unlock(&coder->simulation->state_mutex);
 	print_status(coder->simulation, coder->id, "is compiling");
 	smart_sleep(coder->simulation->config.time_to_compile, coder->simulation);
 	release_dongles(coder);
+	return (1);
 }
 
 static void	perform_debug(t_coder *coder)
@@ -55,11 +57,13 @@ void	*coder_routine(void *arg)
 
 	coder = (t_coder *)arg;
 	if (coder->id % 2 == 0)
-		smart_sleep(coder->simulation->config.time_to_compile / 2, coder->simulation);
+		smart_sleep(coder->simulation->config.time_to_compile / 2,
+			coder->simulation);
 	while (coder->compile_count
 		< coder->simulation->config.number_of_compiles_required)
 	{
-		perform_compile(coder);
+		if (!perform_compile(coder))
+			break ;
 		if (simulation_stopped(coder->simulation))
 			break ;
 		perform_debug(coder);

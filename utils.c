@@ -6,22 +6,11 @@
 /*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 12:58:12 by ase               #+#    #+#             */
-/*   Updated: 2026/08/30 12:54:46 by ase              ###   ########.fr       */
+/*   Updated: 2026/09/10 14:39:32 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "codexion.h"
-
-void	smart_sleep(long duration_ms, t_simulation *sim)
-{
-	long	end_time;
-
-	end_time = get_current_time(sim) + duration_ms;
-	while (get_current_time(sim) < end_time && !simulation_stopped(sim))
-	{
-		usleep(500);
-	}
-}
 
 void	print_status(t_simulation *sim, int coder_id, char *msg)
 {
@@ -47,4 +36,15 @@ long	get_time_ms(void)
 long	get_current_time(t_simulation *sim)
 {
 	return (get_time_ms() - sim->start_time);
+}
+
+void	smart_sleep(long duration_ms, t_simulation *sim)
+{
+	long	end_time;
+
+	end_time = get_current_time(sim) + duration_ms;
+	while (get_current_time(sim) < end_time && !simulation_stopped(sim))
+	{
+		usleep(500);
+	}
 }
