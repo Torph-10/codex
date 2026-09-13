@@ -1,0 +1,260 @@
+==94612== Helgrind, a thread error detector
+==94612== Copyright (C) 2007-2017, and GNU GPL'd, by OpenWorks LLP et al.
+==94612== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==94612== Command: ./codexion 5 2000 200 200 200 10 0 fifo
+==94612== 
+69 1 has taken a dongle
+93 1 has taken a dongle
+95 1 is compiling
+105 3 has taken a dongle
+106 3 has taken a dongle
+106 3 is compiling
+305 1 is debugging
+313 2 has taken a dongle
+314 2 has taken a dongle
+314 2 is compiling
+315 5 has taken a dongle
+316 5 has taken a dongle
+317 5 is compiling
+318 3 is debugging
+319 4 has taken a dongle
+508 1 is refactoring
+514 2 is debugging
+518 5 is debugging
+519 4 has taken a dongle
+520 4 is compiling
+522 3 is refactoring
+712 1 has taken a dongle
+712 1 has taken a dongle
+713 1 is compiling
+717 2 is refactoring
+718 5 is refactoring
+721 4 is debugging
+724 3 has taken a dongle
+724 3 has taken a dongle
+727 3 is compiling
+915 1 is debugging
+919 5 has taken a dongle
+919 5 has taken a dongle
+920 5 is compiling
+923 2 has taken a dongle
+924 4 is refactoring
+929 3 is debugging
+932 2 has taken a dongle
+932 2 is compiling
+1116 1 is refactoring
+1121 5 is debugging
+1125 4 has taken a dongle
+1126 4 has taken a dongle
+1126 4 is compiling
+1129 3 is refactoring
+1133 2 is debugging
+1316 1 has taken a dongle
+1317 1 has taken a dongle
+1317 1 is compiling
+1321 5 is refactoring
+1327 4 is debugging
+1332 3 has taken a dongle
+1332 3 has taken a dongle
+1333 3 is compiling
+1334 2 is refactoring
+1517 1 is debugging
+1522 5 has taken a dongle
+1523 5 has taken a dongle
+1523 5 is compiling
+1527 4 is refactoring
+1533 3 is debugging
+1534 2 has taken a dongle
+1534 2 has taken a dongle
+1535 2 is compiling
+1719 1 is refactoring
+1724 5 is debugging
+1728 4 has taken a dongle
+1729 4 has taken a dongle
+1729 4 is compiling
+1733 3 is refactoring
+1735 2 is debugging
+1919 1 has taken a dongle
+1920 1 has taken a dongle
+1920 1 is compiling
+1924 5 is refactoring
+1930 4 is debugging
+1935 3 has taken a dongle
+1935 3 has taken a dongle
+1935 3 is compiling
+1936 2 is refactoring
+2122 1 is debugging
+2125 5 has taken a dongle
+2125 5 has taken a dongle
+2125 5 is compiling
+2131 4 is refactoring
+2136 3 is debugging
+2137 2 has taken a dongle
+2137 2 has taken a dongle
+2138 2 is compiling
+2323 1 is refactoring
+2326 5 is debugging
+2331 4 has taken a dongle
+2332 4 has taken a dongle
+2332 4 is compiling
+2336 3 is refactoring
+2340 2 is debugging
+2523 1 has taken a dongle
+2524 1 has taken a dongle
+2524 1 is compiling
+2526 5 is refactoring
+2533 4 is debugging
+2537 3 has taken a dongle
+2537 3 has taken a dongle
+2537 3 is compiling
+2541 2 is refactoring
+2725 1 is debugging
+2726 5 has taken a dongle
+2727 5 has taken a dongle
+2727 5 is compiling
+2733 4 is refactoring
+2737 3 is debugging
+2741 2 has taken a dongle
+2741 2 has taken a dongle
+2742 2 is compiling
+2926 1 is refactoring
+2928 5 is debugging
+2935 4 has taken a dongle
+2936 4 has taken a dongle
+2936 4 is compiling
+2938 3 is refactoring
+2942 2 is debugging
+3126 1 has taken a dongle
+3128 1 has taken a dongle
+3128 1 is compiling
+3129 5 is refactoring
+3137 4 is debugging
+3138 3 has taken a dongle
+3139 3 has taken a dongle
+3139 3 is compiling
+3143 2 is refactoring
+3328 1 is debugging
+3329 5 has taken a dongle
+3330 5 has taken a dongle
+3330 5 is compiling
+3337 4 is refactoring
+3339 3 is debugging
+3344 2 has taken a dongle
+3344 2 has taken a dongle
+3344 2 is compiling
+3528 1 is refactoring
+3531 5 is debugging
+3538 4 has taken a dongle
+3538 4 has taken a dongle
+3538 4 is compiling
+3540 3 is refactoring
+3545 2 is debugging
+3728 1 has taken a dongle
+3730 1 has taken a dongle
+3730 1 is compiling
+3731 5 is refactoring
+3740 4 is debugging
+3741 3 has taken a dongle
+3741 3 has taken a dongle
+3741 3 is compiling
+3746 2 is refactoring
+3931 1 is debugging
+3932 5 has taken a dongle
+3932 5 has taken a dongle
+3932 5 is compiling
+3940 4 is refactoring
+3942 3 is debugging
+3946 2 has taken a dongle
+3947 2 has taken a dongle
+3947 2 is compiling
+4132 1 is refactoring
+4132 5 is debugging
+4142 4 has taken a dongle
+4142 4 has taken a dongle
+4143 4 is compiling
+4143 3 is refactoring
+4147 2 is debugging
+4332 1 has taken a dongle
+4333 1 has taken a dongle
+4333 1 is compiling
+4333 5 is refactoring
+4343 3 has taken a dongle
+4344 4 is debugging
+4346 3 has taken a dongle
+4346 3 is compiling
+4347 2 is refactoring
+4533 1 is debugging
+4534 5 has taken a dongle
+4537 5 has taken a dongle
+4538 5 is compiling
+4544 4 is refactoring
+4546 3 is debugging
+4548 2 has taken a dongle
+4548 2 has taken a dongle
+4549 2 is compiling
+4733 1 is refactoring
+4739 5 is debugging
+4745 4 has taken a dongle
+4745 4 has taken a dongle
+4745 4 is compiling
+4747 3 is refactoring
+4749 2 is debugging
+4933 1 has taken a dongle
+4934 1 has taken a dongle
+4934 1 is compiling
+4939 5 is refactoring
+4946 4 is debugging
+4948 3 has taken a dongle
+4948 3 has taken a dongle
+4948 3 is compiling
+4951 2 is refactoring
+5134 1 is debugging
+5140 5 has taken a dongle
+5141 5 has taken a dongle
+5141 5 is compiling
+5146 4 is refactoring
+5148 3 is debugging
+5151 2 has taken a dongle
+5152 2 has taken a dongle
+5152 2 is compiling
+5334 1 is refactoring
+5342 5 is debugging
+5346 4 has taken a dongle
+5346 4 has taken a dongle
+5347 4 is compiling
+5348 3 is refactoring
+5353 2 is debugging
+5535 1 has taken a dongle
+5535 1 has taken a dongle
+5535 1 is compiling
+5542 5 is refactoring
+5547 4 is debugging
+5549 3 has taken a dongle
+5550 3 has taken a dongle
+5550 3 is compiling
+5553 2 is refactoring
+5736 1 is debugging
+5743 5 has taken a dongle
+5743 5 has taken a dongle
+5744 5 is compiling
+5748 4 is refactoring
+5751 3 is debugging
+5754 2 has taken a dongle
+5755 2 has taken a dongle
+5755 2 is compiling
+5936 1 is refactoring
+5944 5 is debugging
+5948 4 has taken a dongle
+5949 4 has taken a dongle
+5949 4 is compiling
+5951 3 is refactoring
+5955 2 is debugging
+6145 5 is refactoring
+6149 4 is debugging
+6155 2 is refactoring
+6349 4 is refactoring
+==94612== 
+==94612== Use --history-level=approx or =none to gain increased speed, at
+==94612== the cost of reduced accuracy of conflicting-access information
+==94612== For lists of detected and suppressed errors, rerun with: -s
+==94612== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 258342 from 97)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   codexion.h                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abelgarh <abelgarh@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 12:36:40 by ase               #+#    #+#             */
-/*   Updated: 2026/09/11 00:31:35 by abelgarh         ###   ########.fr       */
+/*   Updated: 2026/09/12 19:18:41 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,7 +112,6 @@ int		heap_top(t_heap *heap);
 void	queue_request(t_coder *coder, t_dongle *dongle);
 void	cancel_request(t_coder *coder, t_dongle *dongle);
 int		try_acquire(t_coder *coder, t_dongle *dongle);
-void	sift_down(t_heap *heap, int i);
 void	cleanup_dongles(t_simulation *sim, int count);
 void	cleanup_simulation(t_simulation *sim);
 void	heap_swap(t_request *a, t_request *b);

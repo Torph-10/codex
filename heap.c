@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   heap.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abelgarh <abelgarh@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/07 12:16:09 by ase               #+#    #+#             */
-/*   Updated: 2026/09/11 00:32:00 by abelgarh         ###   ########.fr       */
+/*   Updated: 2026/09/13 02:08:38 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,9 +42,6 @@ int	heap_top(t_heap *heap)
 
 void	heap_push(t_heap *heap, t_coder *coder, t_dongle *dongle)
 {
-	int		i;
-	int		parent;
-
 	if (heap->size >= heap->capacity)
 		return ;
 	dongle->fifo_ticket++;
@@ -52,34 +49,23 @@ void	heap_push(t_heap *heap, t_coder *coder, t_dongle *dongle)
 	heap->requests[heap->size].arrival_order = dongle->fifo_ticket;
 	heap->requests[heap->size].deadline = coder->last_compile_start
 		+ coder->simulation->config.time_to_burnout;
-	i = heap->size;
 	heap->size++;
-	while (i > 0)
+	if (heap->size == 2)
 	{
-		parent = (i - 1) / 2;
-		if (!heap_priority(heap, &heap->requests[i], &heap->requests[parent]))
-			break ;
-		heap_swap(&heap->requests[i], &heap->requests[parent]);
-		i = parent;
+		if (heap_priority(heap, &heap->requests[1], &heap->requests[0]))
+			heap_swap(&heap->requests[0], &heap->requests[1]);
 	}
 }
 
 void	heap_remove(t_heap *heap, int coder_id)
 {
-	int	i;
-
-	i = 0;
-	while (i < heap->size && heap->requests[i].coder_id != coder_id)
-		i++;
-	if (i >= heap->size)
+	if (heap->size == 0)
+		return ;
+	if (heap->size == 2 && heap->requests[0].coder_id == coder_id)
+		heap->requests[0] = heap->requests[1];
+	else if (heap->size == 2 && heap->requests[1].coder_id != coder_id)
+		return ;
+	else if (heap->size == 1 && heap->requests[0].coder_id != coder_id)
 		return ;
 	heap->size--;
-	heap->requests[i] = heap->requests[heap->size];
-	while (i > 0 && heap_priority(heap, &heap->requests[i],
-			&heap->requests[(i - 1) / 2]))
-	{
-		heap_swap(&heap->requests[i], &heap->requests[(i - 1) / 2]);
-		i = (i - 1) / 2;
-	}
-	sift_down(heap, i);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   monitor.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: abelgarh <abelgarh@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ase <ase@student.42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/28 13:05:32 by ase               #+#    #+#             */
-/*   Updated: 2026/09/11 00:32:23 by abelgarh         ###   ########.fr       */
+/*   Updated: 2026/09/13 00:24:41 by ase              ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,6 @@ void	*monitor_routine(void *arg)
 			pthread_mutex_lock(&sim->state_mutex);
 			sim->stopped = 1;
 			pthread_mutex_unlock(&sim->state_mutex);
-			wake_up_everyone(sim);
 			return (NULL);
 		}
 		usleep(1000);

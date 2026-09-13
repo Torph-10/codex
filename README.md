@@ -14,7 +14,7 @@ Each coder is represented by a POSIX thread (`pthread`). Coders repeatedly perfo
 
 After refactoring, the coder tries to compile again until the required number of compilations has been reached.
 
-The number of dongles is equal to the number of coders, with one dongle shared between each pair of neighbouring coders in the circular hub.
+The number of dongles is equal to the number of coders, with one dongle shared between each pair of neighbouring coders in the circular hub. Because of this ring topology, **each dongle can only ever be contested by exactly two coders** — its left neighbour and its right neighbour. This is an important structural fact: it means each dongle's waiting queue never holds more than two requests at a time.
 
 The simulation must also respect a burnout deadline. A coder burns out if they do not start a new compilation within `time_to_burnout` milliseconds from the beginning of their previous compilation (or from the beginning of the simulation).
 
@@ -99,20 +99,30 @@ A configuration where the complete coder cycle exceeds the burnout deadline:
 ```bash
 ./codexion 5 500 200 200 200 10 0 fifo
 ```
-## Logs:
+
+A configuration with a large cooldown, forcing coders to queue for dongles (good for observing FIFO vs EDF grant-order differences):
+
+```bash
+./codexion 5 3000 200 200 200 10 800 fifo
+./codexion 5 3000 200 200 200 10 800 edf
+```
+
+## Logs
+
 Any state change of a coder must be formatted as follows:
 
-- timestamp_in_ms X has taken a dongle
-- timestamp_in_ms X is compiling
-- timestamp_in_ms X is debugging
-- timestamp_in_ms X is refactoring
-- timestamp_in_ms X burned out
-X will be the coder number
+- `timestamp_in_ms X has taken a dongle`
+- `timestamp_in_ms X is compiling`
+- `timestamp_in_ms X is debugging`
+- `timestamp_in_ms X is refactoring`
+- `timestamp_in_ms X burned out`
+
+`X` is the coder number.
 
 Rules:
 
-A displayed state message should not be mixed up with another message.
-A message announcing that a coder burned out should be displayed no more than 10 ms after the actual burnout.
+- A displayed state message should not be mixed up with another message.
+- A message announcing that a coder burned out should be displayed no more than 10 ms after the actual burnout.
 
 ## Blocking cases handled
 
@@ -128,22 +138,16 @@ To prevent this, each coder always acquires dongles in a deterministic order bas
 lower dongle ID -> higher dongle ID
 ```
 
-This removes the circular-wait pattern caused by different threads acquiring the same resources in opposite orders.
-
-For example, instead of having:
+This removes the circular-wait pattern caused by different threads acquiring the same resources in opposite orders. For example, instead of:
 
 ```text
 Coder A: D1 -> D2
 Coder B: D2 -> D1
 ```
 
-both coders follow the same resource ordering rule.
-
-This addresses the circular-wait part of the Coffman deadlock conditions.
+both coders follow the same resource ordering rule. This addresses the circular-wait part of the Coffman deadlock conditions.
 
 ### Coffman's conditions
-
-The implementation takes deadlock prevention into account by avoiding the circular-wait condition through ordered resource acquisition.
 
 The relevant Coffman conditions are:
 
@@ -156,7 +160,7 @@ Dongles are mutually exclusive resources and coders may need to wait while holdi
 
 ### Starvation prevention
 
-Waiting coders are stored in a custom priority queue implemented as a binary heap for each dongle.
+Waiting coders are stored in a custom priority queue implemented as heap for each dongle. Because of the ring topology, **each dongle's waiting queue holds at most two requests** (its two neighbouring coders) — the heap implementation is intentionally specialised for this two-entry maximum.
 
 The scheduler determines the ordering:
 
@@ -164,15 +168,11 @@ The scheduler determines the ordering:
 * **EDF:** earlier deadlines have higher priority.
 * `coder_id` is used as a deterministic tie-breaker.
 
-This prevents the ordering from being arbitrary and provides deterministic resource selection.
+Each queue entry is removed by matching its specific `coder_id`, not by position, so a coder cancelling its own request (e.g. because the simulation stopped while it was still waiting) never removes the other coder's request by mistake.
 
 ### Cooldown handling
 
-After a dongle is released, it cannot immediately be reused until its cooldown period has elapsed.
-
-Each dongle stores an `available_at` timestamp indicating when it becomes available again.
-
-A coder therefore has to respect both:
+After a dongle is released, it cannot immediately be reused until its cooldown period has elapsed. Each dongle stores an `available_at` timestamp indicating when it becomes available again. A coder therefore has to respect both:
 
 ```text
 dongle ownership
@@ -180,13 +180,11 @@ dongle ownership
 dongle cooldown
 ```
 
-before acquiring the resource.
+before acquiring the resource. While waiting specifically for cooldown to elapse (as opposed to waiting for the dongle to free up), the coder retries on a short interval rather than blocking indefinitely, since no other thread will signal it the instant the cooldown timestamp passes.
 
 ### Precise burnout detection
 
-A dedicated **monitor thread** continuously checks the state of the coders.
-
-For every coder that has not completed the required number of compilations, the monitor compares:
+A dedicated **monitor thread** continuously checks the state of the coders. For every coder that has not completed the required number of compilations, the monitor compares:
 
 ```text
 current_time - last_compile_start
@@ -198,15 +196,11 @@ with:
 time_to_burnout
 ```
 
-When the limit is reached, the coder is marked as burned out and the simulation is stopped.
-
-The monitor checks frequently enough to detect burnout within the required timing constraints.
+When the limit is reached, the coder is marked as burned out and the simulation is stopped. The monitor checks frequently enough to detect burnout within the required timing constraints.
 
 ### Log serialization
 
-Multiple coder threads and the monitor thread may print messages concurrently.
-
-To prevent interleaved or corrupted output, logging is protected by a dedicated:
+Multiple coder threads and the monitor thread may print messages concurrently. To prevent interleaved or corrupted output, logging is protected by a dedicated:
 
 ```c
 pthread_mutex_t log_mutex;
@@ -222,39 +216,26 @@ The simulation has a shared `stopped` state protected by:
 pthread_mutex_t state_mutex;
 ```
 
-When either:
-
-* a coder burns out, or
-* all coders complete the required number of compilations,
-
-the simulation is marked as stopped.
-
-Waiting threads are notified so that they can leave their waiting state and terminate cleanly.
+When either a coder burns out, or all coders complete the required number of compilations, the simulation is marked as stopped. Waiting threads are notified so that they can leave their waiting state, remove their own pending request from any dongle queue they were still waiting on, and terminate cleanly.
 
 ## Thread synchronization mechanisms
 
-The implementation uses POSIX threads and synchronization primitives to coordinate access to shared resources and communicate between coder threads and the monitor.
-
 ### `pthread_mutex_t`
 
-Mutexes are used to protect shared state that must not be modified concurrently.
+Mutexes protect shared state that must not be modified concurrently:
 
-The implementation uses mutexes for resources such as:
-
-* Dongle ownership and availability
+* Dongle ownership, availability, and waiting queue
 * Simulation stop state
 * Log output
-* Shared coder state
+* Shared coder state (`compile_count`, `last_compile_start`)
 
-For example, the state of the simulation is protected with:
+Example:
 
 ```c
 pthread_mutex_lock(&sim->state_mutex);
 sim->stopped = 1;
 pthread_mutex_unlock(&sim->state_mutex);
 ```
-
-This ensures that multiple threads cannot read and modify the protected state simultaneously in an unsafe way.
 
 ### Dongle mutexes
 
@@ -264,9 +245,7 @@ Every dongle has its own mutex:
 pthread_mutex_t mutex;
 ```
 
-This protects information belonging to that dongle, including its availability and waiting state.
-
-This prevents two coder threads from simultaneously treating the same dongle as available.
+This protects that dongle's ownership, availability, and waiting-queue state, preventing two coder threads from simultaneously treating the same dongle as available or corrupting its queue.
 
 ### `pthread_cond_t`
 
@@ -276,11 +255,7 @@ Each dongle also has a condition variable:
 pthread_cond_t cond;
 ```
 
-Condition variables allow coder threads to wait without continuously consuming CPU while a dongle is unavailable.
-
-A waiting coder sleeps until another thread changes the resource state and signals the waiting threads.
-
-The condition variable is used together with a mutex:
+Condition variables let a coder thread sleep without consuming CPU while it is not yet the highest-priority waiter for a dongle. It is woken either when the dongle is released (broadcast) or when the simulation stops.
 
 ```text
 lock mutex
@@ -289,18 +264,12 @@ lock mutex
 unlock mutex
 ```
 
-When the resource may become available, waiting threads are awakened and re-check the condition.
+### Custom wake-up mechanism
 
-### Custom event / wake-up mechanism
-
-The project also uses a custom wake-up mechanism based on condition-variable broadcasting.
-
-When the simulation stops, all dongle condition variables are notified so that blocked coder threads can wake up and check the shared `stopped` state.
-
-Conceptually:
+When the simulation stops, every dongle's condition variable is broadcast so that any blocked coder thread wakes up, re-checks the shared `stopped` state, cleans up its own pending queue entry if it has one, and exits.
 
 ```text
-monitor detects burnout
+monitor detects burnout / completion
         ↓
 stopped = 1
         ↓
@@ -308,44 +277,20 @@ wake up waiting coders
         ↓
 coders re-check stopped
         ↓
-coders terminate safely
+coders remove their own queue entry (if any) and terminate
 ```
-
-This prevents threads from remaining blocked indefinitely after the simulation has already ended.
 
 ### Race condition prevention
 
-A race condition can happen when several threads access the same shared variable at the same time and at least one of them modifies it.
-
-For example, the simulation stop flag is shared by all coder threads and the monitor.
-
-Instead of doing an unsafe access:
+Instead of an unsafe direct read:
 
 ```c
 if (sim->stopped)
 ```
 
-the implementation accesses the value while holding `state_mutex`, copies it locally, and then releases the mutex.
-
-This guarantees a consistent read.
-
-The same principle is used when updating shared state such as:
-
-```text
-stopped
-last_compile_start
-compile_count
-dongle ownership
-dongle availability
-```
+the implementation accesses shared values while holding the appropriate mutex, copies them locally, then releases the mutex — guaranteeing a consistent read. The same principle applies to `last_compile_start`, `compile_count`, dongle ownership, and dongle availability.
 
 ### Communication between coders and the monitor
-
-The coders update their state when important events occur, such as starting a compilation.
-
-The monitor reads that state while holding the appropriate mutex.
-
-The communication therefore follows:
 
 ```text
 Coder thread
@@ -361,29 +306,13 @@ reads shared state
 checks burnout / completion
 ```
 
-When the monitor detects a terminal condition, it updates the shared stop state and wakes waiting coder threads through the condition variables.
-
 ## Scheduling
 
 ### FIFO
 
-FIFO stands for **First In, First Out**.
-
-Each request receives an arrival number when it joins a dongle's waiting queue.
-
-Example:
-
-```text
-Coder 2 -> arrival order 1
-Coder 4 -> arrival order 2
-Coder 1 -> arrival order 3
-```
-
-The scheduler selects Coder 2 first, then Coder 4, then Coder 1.
+Each request receives an arrival number when it joins a dongle's waiting queue. The request with the lowest arrival number is served first.
 
 ### EDF
-
-EDF stands for **Earliest Deadline First**.
 
 Each request receives a deadline based on:
 
@@ -391,47 +320,25 @@ Each request receives a deadline based on:
 last_compile_start + time_to_burnout
 ```
 
-The request with the earliest deadline gets the highest priority.
-
-Example:
-
-```text
-Coder 1 -> deadline 1200
-Coder 2 -> deadline 900
-Coder 3 -> deadline 1100
-```
-
-The order is:
-
-```text
-Coder 2
-Coder 3
-Coder 1
-```
-
-If two requests have the same scheduling value, `coder_id` is used as a deterministic tie-breaker.
+The request with the earliest deadline is served first. If two requests have the same deadline, `coder_id` is used as a deterministic tie-breaker.
 
 ## Data structures
 
-### Custom binary heap
+### Custom priority queue
 
-The waiting queue for each dongle is implemented as a custom binary heap.
-
-The project does not rely on a standard-library priority queue.
-
-The heap supports operations such as:
+The waiting queue for each dongle is implemented as a small custom array-based priority queue , since the ring topology guarantees at most two simultaneous waiters per dongle:
 
 ```text
-heap_push()
-heap_top()
-heap_remove()
+heap_push()    — inserts a request, keeping the highest-priority one at index 0
+heap_top()     — returns the coder_id of the highest-priority waiter, or -1 if empty
+heap_remove()  — removes a request by coder_id
 ```
 
-The heap uses the scheduler's priority rule to maintain the correct request at the top.
+`heap_priority()` decides ordering using the scheduler's rule (FIFO arrival order or EDF deadline), with `coder_id` as the final tie-breaker.
 
 ### Requests
 
-Each waiting request contains information such as:
+Each waiting request contains:
 
 ```text
 coder_id
@@ -442,8 +349,6 @@ deadline
 This allows the same queue implementation to support both FIFO and EDF scheduling.
 
 ## Project structure
-
-The source code is organized around the main responsibilities of the simulation, including:
 
 ```text
 Parsing
@@ -456,7 +361,7 @@ Coder threads
     ↓
 Dongle management
     ↓
-Custom scheduling / heap
+Custom scheduling / priority queue
     ↓
 Monitor thread
     ↓
@@ -477,33 +382,23 @@ Cleanup
 
 ### Scheduling
 
-* Wikipedia — Earliest deadline first scheduling:
-  https://en.wikipedia.org/wiki/Earliest_deadline_first_scheduling
-* Wikipedia — FIFO scheduling:
-  https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)
+* Wikipedia — Earliest deadline first scheduling: https://en.wikipedia.org/wiki/Earliest_deadline_first_scheduling
+* Wikipedia — FIFO scheduling: https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)
 
-### Data structures
-
-* Binary heap:
-  https://www.youtube.com/watch?v=HqPJF2L5h9U&t=1850s
 
 ### AI usage
 
-AI tools were used as a learning and development aid during the project.
-
-They were used for:
+AI tools were used as a learning and development aid during the project. They were used for:
 
 * Understanding POSIX threads, mutexes, condition variables, race conditions, deadlocks, and thread scheduling.
 * Explaining the relationship between processes, threads, stacks, shared address space, and CPU execution.
-* Reviewing and explaining the implementation of the custom binary heap and scheduling logic.
+* Reviewing and explaining the implementation of the custom priority queue and scheduling logic, including a correctness review of dongle-queue removal (matching by `coder_id` rather than queue position) after a busy-loop-vs-condition-wait comparison surfaced a related timing issue during testing.
 * Helping reason about FIFO and EDF scheduling and request prioritization.
 * Assisting with documentation and README preparation.
 
 AI-generated suggestions were reviewed, tested, and adapted to match the project requirements and the final implementation. The final code and design decisions remain the responsibility of the project authors.
 
 ## Constraints
-
-The project follows the required Codexion constraints, including:
 
 * No global variables.
 * POSIX threads for coder execution.
